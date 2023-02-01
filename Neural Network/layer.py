@@ -1,22 +1,30 @@
 import numpy as np
+import nnfs
 
-inputs = [
-    [1, 2, 3, 2.5],
-    [2.0, 5.0, -1.0, 2.0],
-    [-1.5, 2.7, 3.3, -0.8]
-]
+from nnfs.datasets import spiral_data
 
-weights = [
-    [0.2, 0.8, -0.5, 1.0],
-    [0.5, -0.91, 0.26, -0.5],
-    [-0.26, -0.27, 0.17, 0.87]
-]
+nnfs.init()
 
-biases = [2, 3, 0.5]
 
-layer_outputs = []  # Output of current layer
+class Layer_Dense:
+    def __init__(self, n_inputs, n_neurons):
+        # weights are initialized with random values from normal distribution
+        # with mean 0(mu) and standard deviation 0.1(sigma)
+        self.weights = 0.10 * np.random.randn(n_inputs, n_neurons)
+        self.biases = np.zeros((1, n_neurons))
 
-layer_outputs = np.dot(inputs, np.array(weights).T) + biases
-# layer_outputs = np.matrix(inputs) * np.matrix(weights).T + biases
+    def forward(self, inputs):
+        self.output = np.dot(inputs, self.weights) + self.biases
 
-print(layer_outputs)
+
+# Create dataset
+X, y = spiral_data(samples=100, classes=3)
+
+# Create Dense layer with 2 input features and 3 output values
+dense1 = Layer_Dense(2, 3)
+
+# Perform a forward pass of our training data through this layer
+dense1.forward(X)
+
+# Let's see output of the first few samples:
+print(dense1.output[:5])
