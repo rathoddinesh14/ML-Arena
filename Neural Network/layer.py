@@ -30,6 +30,37 @@ class Activation_Softmax:
         probabilities = exp_values / np.sum(exp_values, axis=1, keepdims=True)
         self.output = probabilities
 
+
+class Loss:
+    def calculate(self, output, y):
+        # calculate sample losses
+        sample_losses = self.forward(output, y)
+        # calculate mean loss
+        data_loss = np.mean(sample_losses)
+        # return loss
+        return data_loss
+
+
+class Loss_CategoricalCrossentropy(Loss):
+    def forward(self, y_pred, y_true):
+        # number of samples in a batch
+        samples = len(y_pred)
+        # clip data to prevent division by 0
+        # clip both sides to not drag mean towards any value
+        y_pred_clipped = np.clip(y_pred, 1e-7, 1 - 1e-7)
+        # probabilities for target values - only if categorical labels
+        if len(y_true.shape) == 1:
+            correct_confidences = y_pred_clipped[range(samples), y_true]
+        # mask values - only for one-hot encoded labels
+        elif len(y_true.shape) == 2:
+            # (y_pred * y_true) performs element-wise multiplication
+            # np.sum(, axis=1) sums the values of each row
+            correct_confidences = np.sum(y_pred_clipped * y_true, axis=1)
+        # losses
+        negative_log_likelihoods = -np.log(correct_confidences)
+        return negative_log_likelihoods
+
+
 # Create dataset
 X, y = spiral_data(samples=100, classes=3)
 
@@ -63,3 +94,12 @@ activation2.forward(dense2.output)
 
 # Let's see output of the first few samples:
 print(activation2.output[:5])
+
+# Create loss function
+loss_function = Loss_CategoricalCrossentropy()
+
+# Calculate loss from output of activation2 and targets
+loss = loss_function.calculate(activation2.output, y)
+
+# Print loss value
+print('loss:', loss)
