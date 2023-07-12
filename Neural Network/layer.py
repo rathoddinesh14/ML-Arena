@@ -103,3 +103,17 @@ loss = loss_function.calculate(activation2.output, y)
 
 # Print loss value
 print('loss:', loss)
+
+# calculate accuracy from output of activation2 and targets
+# calculate values along first axis
+predictions = np.argmax(activation2.output, axis=1)
+# print("predictions:", predictions)
+
+# print("y:", y, len(y.shape))
+if len(y.shape) == 2:
+    # check if targets are one-hot encoded
+    y = np.argmax(y, axis=1)
+
+accuracy = np.mean(predictions == y)
+
+print("acc:", accuracy)
