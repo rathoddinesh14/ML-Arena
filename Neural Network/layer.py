@@ -12,6 +12,7 @@ class Layer_Dense:
         # with mean 0(mu) and standard deviation 0.1(sigma)
         self.weights = 0.10 * np.random.randn(n_inputs, n_neurons)
         self.biases = np.zeros((1, n_neurons))
+        self.layer_shape = (n_inputs, n_neurons)
 
     def forward(self, inputs):
         self.output = np.dot(inputs, self.weights) + self.biases
@@ -77,43 +78,98 @@ dense2 = Layer_Dense(3, 3)
 # Create Softmax activation (to be used with Dense layer):
 activation2 = Activation_Softmax()
 
-# Make a forward pass of our training data through this layer
-dense1.forward(X)
-
-# Make a forward pass through activation function
-# it takes the output of first dense layer here
-activation1.forward(dense1.output)
-
-# Make a forward pass through second Dense layer
-# it takes outputs of activation function of first layer as inputs
-dense2.forward(activation1.output)
-
-# Make a forward pass through activation function
-# it takes the output of second dense layer here
-activation2.forward(dense2.output)
-
-# Let's see output of the first few samples:
-print(activation2.output[:5])
-
 # Create loss function
 loss_function = Loss_CategoricalCrossentropy()
 
-# Calculate loss from output of activation2 and targets
-loss = loss_function.calculate(activation2.output, y)
+lowest_loss = 9999999  # some initial value
+best_dense1_weights = dense1.weights.copy()
+best_dense1_biases = dense1.biases.copy()
+best_dense2_weights = dense2.weights.copy()
+best_dense2_biases = dense2.biases.copy()
 
-# Print loss value
-print('loss:', loss)
 
-# calculate accuracy from output of activation2 and targets
-# calculate values along first axis
-predictions = np.argmax(activation2.output, axis=1)
-# print("predictions:", predictions)
+plt_acc = []
+plt_loss = []
+plt_best_loss = []
 
-# print("y:", y, len(y.shape))
-if len(y.shape) == 2:
-    # check if targets are one-hot encoded
-    y = np.argmax(y, axis=1)
 
-accuracy = np.mean(predictions == y)
+def tweak_params(layer):
+    layer.weights += 0.05 * np.random.randn(layer.layer_shape[0], layer.layer_shape[1])
+    layer.biases  += 0.05 * np.random.randn(1, layer.layer_shape[1])
 
-print("acc:", accuracy)
+for iteration in range(10001):
+
+    # new weights for each iteration
+    tweak_params(dense1)
+    tweak_params(dense2)
+
+    # Make a forward pass of our training data through this layer
+    dense1.forward(X)
+
+    # Make a forward pass through activation function
+    # it takes the output of first dense layer here
+    activation1.forward(dense1.output)
+
+    # Make a forward pass through second Dense layer
+    # it takes outputs of activation function of first layer as inputs
+    dense2.forward(activation1.output)
+
+    # Make a forward pass through activation function
+    # it takes the output of second dense layer here
+    activation2.forward(dense2.output)
+
+    # # Let's see output of the first few samples:
+    # print(activation2.output[:5])
+
+    # Calculate loss from output of activation2 and targets
+    loss = loss_function.calculate(activation2.output, y)
+
+    # Print loss value
+    # print('loss:', loss)
+
+    # calculate accuracy from output of activation2 and targets
+    # calculate values along first axis
+    predictions = np.argmax(activation2.output, axis=1)
+    # print("predictions:", predictions)
+
+    # print("y:", y, len(y.shape))
+    if len(y.shape) == 2:
+        # check if targets are one-hot encoded
+        y = np.argmax(y, axis=1)
+
+    accuracy = np.mean(predictions == y)
+
+    # print("acc:", accuracy)
+
+    plt_acc.append(accuracy)
+    plt_loss.append(loss)
+
+    if loss < lowest_loss:
+        lowest_loss = loss
+        best_dense1_weights = dense1.weights.copy()
+        best_dense1_biases = dense1.biases.copy()
+        best_dense2_weights = dense2.weights.copy()
+        best_dense2_biases = dense2.biases.copy()
+
+        print(f'iteration: {iteration}, '
+            f'acc: {accuracy:.3f}, '
+            f'loss: {loss:.3f}, '
+            f'best_loss: {lowest_loss:.3f}')
+
+    else:
+        # revert weights and biases
+        dense1.weights = best_dense1_weights.copy()
+        dense1.biases = best_dense1_biases.copy()
+        dense2.weights = best_dense2_weights.copy()
+        dense2.biases = best_dense2_biases.copy()
+    
+    plt_best_loss.append(lowest_loss)
+
+import matplotlib.pyplot as plt
+
+plt.plot(plt_acc, label='acc')
+plt.plot(plt_loss, label='loss')
+plt.plot(plt_best_loss, label='best_loss')
+plt.legend()
+# plt.show()
+plt.savefig('acc_loss.png')
